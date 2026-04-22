@@ -159,26 +159,38 @@ export default class Camera {
     }
 
     private rayColor(ray: Ray, depth: number, world: HittableList): Color {
-        if (depth <= 0) {
-            return new Vec3(0, 0, 0)
-        }
-
+        let currentRay = ray
+        let attenuation = new Vec3(1, 1, 1)
         const rec = new HitRecord()
+        const rayInterval = new Interval(0.001, Infinity)
 
-        if (world.hit(ray, new Interval(0.001, Infinity), rec)) {
-            const scatterResult = rec.material.scatter(ray, rec)
+        for (let bounce = 0; bounce < depth; bounce++) {
+            if (!world.hit(currentRay, rayInterval, rec)) {
+                const unitDirection = unitVector(currentRay.direction)
+                const a = 0.5 * (unitDirection.y + 1.0)
+                const sky = new Vec3(1.0 - 0.5 * a, 1.0 - 0.3 * a, 1.0)
+                return attenuation.mul(sky)
+            }
+
+            const scatterResult = rec.material.scatter(currentRay, rec)
             if (!scatterResult) {
                 return new Vec3(0, 0, 0)
             }
-            return scatterResult.attenuation.mul(
-                this.rayColor(scatterResult.scattered, depth - 1, world)
-            )
+
+            attenuation = attenuation.mul(scatterResult.attenuation)
+            if (isAttenuationNegligible(attenuation)) {
+                return new Vec3(0, 0, 0)
+            }
+
+            currentRay = scatterResult.scattered
         }
 
-        const unitDirection = unitVector(ray.direction)
-        const a = 0.5 * (unitDirection.y + 1.0)
-        return new Vec3(1.0, 1.0, 1.0).mul(1.0 - a).add(new Vec3(0.5, 0.7, 1.0).mul(a))
+        return new Vec3(0, 0, 0)
     }
+}
+
+function isAttenuationNegligible(attenuation: Color): boolean {
+    return attenuation.x < 1e-3 && attenuation.y < 1e-3 && attenuation.z < 1e-3
 }
 
 function sampleSquare(): Vec3 {
