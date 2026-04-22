@@ -1,7 +1,11 @@
+/// <reference types="node" />
+
 import { performance } from 'node:perf_hooks'
+import { writeFile } from 'node:fs/promises'
 import Camera from '../src/renderer/camera'
 import { createSeededRng } from '../src/core/rng'
 import Vec3 from '../src/core/vec3'
+import BvhNode from '../src/renderer/bvhNode'
 import { randomScene } from '../src/renderer/scene'
 
 type ImageDataCtor = new (width: number, height: number) => {
@@ -55,6 +59,26 @@ function median(values: number[]): number {
         : sorted[mid]
 }
 
+interface BenchmarkResult {
+    config: {
+        width: number
+        height: number
+        spp: number
+        depth: number
+        seed: number
+        runs: number
+        warmupRuns: number
+    }
+    stats: {
+        minMs: number
+        maxMs: number
+        avgMs: number
+        medianMs: number
+    }
+    timingsMs: number[]
+    generatedAt: string
+}
+
 async function run(): Promise<void> {
     installPolyfills()
 
@@ -66,7 +90,8 @@ async function run(): Promise<void> {
     const maxDepth = Math.max(1, Math.floor(envNumber('BENCH_DEPTH', 20)))
     const seed = Math.floor(envNumber('BENCH_SEED', 1337))
 
-    const world = randomScene(createSeededRng(seed))
+    const worldList = randomScene(createSeededRng(seed))
+    const world = new BvhNode(worldList.objects)
 
     const timings: number[] = []
 
@@ -104,6 +129,26 @@ async function run(): Promise<void> {
     const avg = timings.reduce((sum, t) => sum + t, 0) / timings.length
     const med = median(timings)
 
+    const result: BenchmarkResult = {
+        config: {
+            width: imageWidth,
+            height: imageHeight,
+            spp: samplesPerPixel,
+            depth: maxDepth,
+            seed,
+            runs,
+            warmupRuns,
+        },
+        stats: {
+            minMs: min,
+            maxMs: max,
+            avgMs: avg,
+            medianMs: med,
+        },
+        timingsMs: timings,
+        generatedAt: new Date().toISOString(),
+    }
+
     console.log('Render benchmark (deterministic scene)')
     console.log(`Config: ${imageWidth}x${imageHeight}, spp=${samplesPerPixel}, depth=${maxDepth}, seed=${seed}`)
     console.log(`Runs: ${runs} (warmup: ${warmupRuns})`)
@@ -111,6 +156,12 @@ async function run(): Promise<void> {
     console.log(`max: ${max.toFixed(2)} ms`)
     console.log(`avg: ${avg.toFixed(2)} ms`)
     console.log(`median: ${med.toFixed(2)} ms`)
+
+    const outputPath = process.env.BENCH_OUTPUT
+    if (outputPath) {
+        await writeFile(outputPath, `${JSON.stringify(result, null, 2)}\n`, 'utf8')
+        console.log(`Saved JSON report: ${outputPath}`)
+    }
 }
 
 run().catch((error: unknown) => {

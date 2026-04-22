@@ -1,0 +1,21 @@
+{
+  "config": {
+    "width": 320,
+    "height": 180,
+    "spp": 20,
+    "depth": 20,
+    "seed": 1337,
+    "runs": 1,
+    "warmupRuns": 0
+  },
+  "stats": {
+    "minMs": 10572.30425,
+    "maxMs": 10572.30425,
+    "avgMs": 10572.30425,
+    "medianMs": 10572.30425
+  },
+  "timingsMs": [
+    10572.30425
+  ],
+  "generatedAt": "2026-04-22T21:29:41.647Z"
+}

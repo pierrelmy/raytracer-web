@@ -1,6 +1,7 @@
 import type { Material } from './material'
 import type { Point3 } from '../core/vec3'
 import Vec3, { dot } from '../core/vec3'
+import type Aabb from './aabb'
 import type Ray from './ray'
 import type Interval from './interval'
 
@@ -28,5 +29,6 @@ export class HitRecord {
 }
 
 export interface Hittable {
+    boundingBox: Aabb
     hit(ray: Ray, rayT: Interval, rec: HitRecord): boolean
 }

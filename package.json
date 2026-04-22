@@ -8,7 +8,10 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "bench:render": "tsx scripts/benchmark-render.ts"
+    "bench:render": "tsx scripts/benchmark-render.ts",
+    "bench:baseline": "BENCH_OUTPUT=benchmarks/render-baseline.json tsx scripts/benchmark-render.ts",
+    "bench:current": "BENCH_OUTPUT=benchmarks/render-current.json tsx scripts/benchmark-render.ts",
+    "bench:check": "npm run bench:current && tsx scripts/benchmark-compare.ts"
   },
   "dependencies": {
     "react": "^19.2.5",

@@ -1,8 +1,7 @@
 import Vec3, { cross, randomDouble, unitVector, type Color, type Point3 } from '../core/vec3'
 import Interval from './interval'
 import Ray from './ray'
-import HittableList from './hittableList'
-import { HitRecord } from './hittable'
+import { HitRecord, type Hittable } from './hittable'
 
 interface CameraConfig {
     imageWidth: number
@@ -84,8 +83,21 @@ export default class Camera {
         this.defocusDiskV = this.v.mul(defocusRadius)
     }
 
-    async render(world: HittableList, options?: RenderOptions): Promise<ImageData> {
-        const image = new ImageData(this.imageWidth, this.imageHeight)
+    async render(world: Hittable, options?: RenderOptions): Promise<ImageData> {
+        return this.renderRows(world, 0, this.imageHeight, options)
+    }
+
+    async renderRows(
+        world: Hittable,
+        rowStart: number,
+        rowEnd: number,
+        options?: RenderOptions
+    ): Promise<ImageData> {
+        const start = Math.max(0, Math.min(this.imageHeight, rowStart))
+        const end = Math.max(start, Math.min(this.imageHeight, rowEnd))
+        const rowCount = end - start
+
+        const image = new ImageData(this.imageWidth, rowCount)
         const scale = 1.0 / this.samplesPerPixel
         const reportProgress = options?.onProgress
         const reportChunk = options?.onChunk
@@ -93,11 +105,11 @@ export default class Camera {
 
         reportProgress?.({
             completedRows: 0,
-            totalRows: this.imageHeight,
+            totalRows: rowCount,
             progress: 0,
         })
 
-        for (let j = 0; j < this.imageHeight; j++) {
+        for (let j = start; j < end; j++) {
             if (options?.signal?.aborted) {
                 break
             }
@@ -112,22 +124,25 @@ export default class Camera {
 
                 const color = pixelColor.mul(scale)
                 const rgba = colorToRgba(color)
-                const index = (j * this.imageWidth + i) * 4
+                const localY = j - start
+                const index = (localY * this.imageWidth + i) * 4
                 image.data[index] = rgba[0]
                 image.data[index + 1] = rgba[1]
                 image.data[index + 2] = rgba[2]
                 image.data[index + 3] = 255
             }
 
+            const completedRows = (j - start) + 1
+
             const progress = {
-                completedRows: j + 1,
-                totalRows: this.imageHeight,
-                progress: (j + 1) / this.imageHeight,
+                completedRows,
+                totalRows: rowCount,
+                progress: rowCount === 0 ? 1 : completedRows / rowCount,
             }
 
             reportProgress?.(progress)
 
-            const shouldFlush = ((j + 1) % rowsPerChunk === 0) || (j + 1 === this.imageHeight)
+            const shouldFlush = (completedRows % rowsPerChunk === 0) || (j + 1 === end)
             if (shouldFlush) {
                 reportChunk?.(image, progress)
                 await nextFrame()
@@ -158,7 +173,7 @@ export default class Camera {
             .add(this.defocusDiskV.mul(p.y))
     }
 
-    private rayColor(ray: Ray, depth: number, world: HittableList): Color {
+    private rayColor(ray: Ray, depth: number, world: Hittable): Color {
         let currentRay = ray
         let attenuationX = 1.0
         let attenuationY = 1.0

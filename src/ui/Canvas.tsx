@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react"
-import { render } from "../renderer/cpuRenderer.ts"
+import { render, type RendererMode, type RendererStats } from "../renderer/cpuRenderer.ts"
 
 export default function Canvas()
 {
@@ -7,6 +7,7 @@ export default function Canvas()
   const ref = useRef<HTMLCanvasElement | null>(null)
   const [progress, setProgress] = useState(0)
   const [isRendering, setIsRendering] = useState(false)
+  const [lastStats, setLastStats] = useState<RendererStats | null>(null)
   const frameRef = useRef<number | null>(null)
   const resizeFrameRef = useRef<number | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
@@ -32,6 +33,10 @@ export default function Canvas()
     if (!ctx) return
 
     let isMounted = true
+    const modeParam = new URLSearchParams(window.location.search).get("renderMode")
+    const mode: RendererMode = modeParam === "single" || modeParam === "workers"
+      ? modeParam
+      : "auto"
 
     const startRender = (width: number, height: number) => {
       const nextWidth = Math.max(1, Math.round(width))
@@ -50,11 +55,17 @@ export default function Canvas()
       setProgress(0)
 
       void render(ctx, canvas.width, canvas.height, {
+          mode,
           signal: controller.signal,
           rowsPerChunk: 3,
           onProgress: ({ progress: p }) => {
             if (!isMounted || renderId !== renderIdRef.current) return
             updateProgress(p)
+          },
+          onStats: (stats) => {
+            if (!isMounted || renderId !== renderIdRef.current) return
+            setLastStats(stats)
+            console.info("[render-stats]", stats)
           },
         })
         .then(() => {
@@ -123,6 +134,17 @@ export default function Canvas()
               style={{ width: `${Math.max(2, progress * 100)}%` }}
             />
           </div>
+        </div>
+      )}
+
+      {lastStats && (
+        <div className="absolute bottom-4 left-4 rounded-lg border border-white/20 bg-black/60 px-3 py-2 text-xs text-white/80 backdrop-blur-sm">
+          <div>mode: {lastStats.modeUsed} (requested: {lastStats.modeRequested})</div>
+          <div>time: {lastStats.durationMs.toFixed(1)} ms</div>
+          <div>internal: {lastStats.imageWidth}x{lastStats.imageHeight}</div>
+          <div>workers: {lastStats.workerCount}</div>
+          {lastStats.fallbackReason && <div>fallback: {lastStats.fallbackReason}</div>}
+          <div className="mt-1 text-white/60">use ?renderMode=workers or ?renderMode=single</div>
         </div>
       )}
     </div>

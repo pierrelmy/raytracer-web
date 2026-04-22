@@ -58,6 +58,24 @@ Lancer un benchmark deterministe pour suivre les optimisations:
 npm run bench:render
 ```
 
+Creer une baseline JSON:
+
+```bash
+npm run bench:baseline
+```
+
+Comparer l etat courant a la baseline (echec si regression > 10% par defaut):
+
+```bash
+npm run bench:check
+```
+
+Ajuster le seuil de regression:
+
+```bash
+BENCH_MAX_REGRESSION_PERCENT=5 npm run bench:check
+```
+
 Variables optionnelles:
 
 - `BENCH_RUNS` (defaut: `10`)
@@ -67,6 +85,10 @@ Variables optionnelles:
 - `BENCH_SPP` (defaut: `20`)
 - `BENCH_DEPTH` (defaut: `20`)
 - `BENCH_SEED` (defaut: `1337`)
+- `BENCH_OUTPUT` (chemin du rapport JSON)
+- `BENCH_BASELINE_PATH` (defaut: `benchmarks/render-baseline.json`)
+- `BENCH_CURRENT_PATH` (defaut: `benchmarks/render-current.json`)
+- `BENCH_MAX_REGRESSION_PERCENT` (defaut: `10`)
 
 Exemple:
 
