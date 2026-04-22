@@ -160,7 +160,9 @@ export default class Camera {
 
     private rayColor(ray: Ray, depth: number, world: HittableList): Color {
         let currentRay = ray
-        let attenuation = new Vec3(1, 1, 1)
+        let attenuationX = 1.0
+        let attenuationY = 1.0
+        let attenuationZ = 1.0
         const rec = new HitRecord()
         const rayInterval = new Interval(0.001, Infinity)
 
@@ -168,8 +170,11 @@ export default class Camera {
             if (!world.hit(currentRay, rayInterval, rec)) {
                 const unitDirection = unitVector(currentRay.direction)
                 const a = 0.5 * (unitDirection.y + 1.0)
-                const sky = new Vec3(1.0 - 0.5 * a, 1.0 - 0.3 * a, 1.0)
-                return attenuation.mul(sky)
+                return new Vec3(
+                    attenuationX * (1.0 - 0.5 * a),
+                    attenuationY * (1.0 - 0.3 * a),
+                    attenuationZ,
+                )
             }
 
             const scatterResult = rec.material.scatter(currentRay, rec)
@@ -177,8 +182,15 @@ export default class Camera {
                 return new Vec3(0, 0, 0)
             }
 
-            attenuation = attenuation.mul(scatterResult.attenuation)
-            if (isAttenuationNegligible(attenuation)) {
+            attenuationX *= scatterResult.attenuation.x
+            attenuationY *= scatterResult.attenuation.y
+            attenuationZ *= scatterResult.attenuation.z
+
+            if (
+                attenuationX < 1e-3
+                && attenuationY < 1e-3
+                && attenuationZ < 1e-3
+            ) {
                 return new Vec3(0, 0, 0)
             }
 
@@ -187,10 +199,6 @@ export default class Camera {
 
         return new Vec3(0, 0, 0)
     }
-}
-
-function isAttenuationNegligible(attenuation: Color): boolean {
-    return attenuation.x < 1e-3 && attenuation.y < 1e-3 && attenuation.z < 1e-3
 }
 
 function sampleSquare(): Vec3 {
@@ -222,6 +230,12 @@ function degreesToRadians(degrees: number): number {
 }
 
 function nextFrame(): Promise<void> {
+    if (typeof requestAnimationFrame !== 'function') {
+        return new Promise((resolve) => {
+            setTimeout(resolve, 0)
+        })
+    }
+
     return new Promise((resolve) => {
         requestAnimationFrame(() => resolve())
     })

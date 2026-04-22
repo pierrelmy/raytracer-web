@@ -49,3 +49,27 @@ La generation de la scene est dans `src/renderer/scene.ts`.
 ## Notes performance
 
 Le rendu est volontairement limite a une resolution interne reduite puis upscale pour rester fluide dans le navigateur.
+
+## Benchmark rendu (10 runs)
+
+Lancer un benchmark deterministe pour suivre les optimisations:
+
+```bash
+npm run bench:render
+```
+
+Variables optionnelles:
+
+- `BENCH_RUNS` (defaut: `10`)
+- `BENCH_WARMUP` (defaut: `1`)
+- `BENCH_WIDTH` (defaut: `320`)
+- `BENCH_HEIGHT` (defaut: `180`)
+- `BENCH_SPP` (defaut: `20`)
+- `BENCH_DEPTH` (defaut: `20`)
+- `BENCH_SEED` (defaut: `1337`)
+
+Exemple:
+
+```bash
+BENCH_RUNS=10 BENCH_WIDTH=480 BENCH_HEIGHT=270 BENCH_SPP=16 npm run bench:render
+```

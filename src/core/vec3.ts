@@ -86,16 +86,16 @@ export default class Vec3
     }
 
     static randomInUnitSphere(): Vec3 {
-        while (true) {
-            const p = Vec3.random(-1, 1)
-            if (p.lengthSquared() < 1) {
-                return p
-            }
-        }
+        const direction = Vec3.randomUnitVector()
+        const radius = Math.cbrt(randomDouble())
+        return direction.mul(radius)
     }
 
     static randomUnitVector(): Vec3 {
-        return Vec3.randomInUnitSphere().normalize()
+        const z = randomDouble(-1, 1)
+        const azimuth = randomDouble(0, 2 * Math.PI)
+        const r = Math.sqrt(1 - z * z)
+        return new Vec3(r * Math.cos(azimuth), r * Math.sin(azimuth), z)
     }
 
     static randomOnHemisphere(normal: Vec3): Vec3 {
@@ -107,12 +107,9 @@ export default class Vec3
     }
 
     static randomInUnitDisk(): Vec3 {
-        while (true) {
-            const p = new Vec3(randomDouble(-1, 1), randomDouble(-1, 1), 0)
-            if (p.lengthSquared() < 1) {
-                return p
-            }
-        }
+        const radius = Math.sqrt(randomDouble())
+        const azimuth = randomDouble(0, 2 * Math.PI)
+        return new Vec3(radius * Math.cos(azimuth), radius * Math.sin(azimuth), 0)
     }
 }
 

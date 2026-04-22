@@ -1,4 +1,5 @@
 import Vec3 from '../core/vec3'
+import { createSeededRng } from '../core/rng'
 import Camera from './camera'
 import { randomScene } from './scene'
 
@@ -14,7 +15,7 @@ interface RenderOptions {
     signal?: AbortSignal
 }
 
-const world = randomScene()
+const world = randomScene(createSeededRng(1337))
 const offscreenCache = new WeakMap<CanvasRenderingContext2D, HTMLCanvasElement>()
 
 export async function render(
